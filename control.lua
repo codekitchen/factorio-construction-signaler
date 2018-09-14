@@ -12,7 +12,7 @@ end)
 script.on_configuration_changed(function()
   -- data migrations
   for _, signaler in pairs(global.signalers) do
-    signaler.signals = {}
+    signaler.signals = signaler.signals or {}
   end
 end)
 
