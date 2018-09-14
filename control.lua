@@ -25,16 +25,23 @@ function find_ghosts(network)
   for _,cell in pairs(network.cells) do
     local pos = cell.owner.position
     local r = cell.construction_radius
-    local bounds = { { pos.x - r, pos.y - r, }, { pos.x + r, pos.y + r } }
-    local ghosts = cell.owner.surface.find_entities_filtered{area=bounds, type="entity-ghost", force=network.force}
-    for _, ghost in pairs(ghosts) do
-      -- bounds can overlap, so we need to dedup here to avoid requesting too much
-      local is_dup = false
-      for _, f in pairs(found) do
-        if f == ghost then is_dup = true end
-      end
-      if not is_dup then
-        table.insert(found, ghost)
+    if r > 0 then
+      -- I had a report of a crash because the bounds were zero-sized,
+      -- presumably because of a zero radius. I tried a few things but I
+      -- couldn't reproduce the problem, so for now I'm just guarding against it
+      -- here. I'd like to know how it happens, though, since I may need to do
+      -- something different in those cases.
+      local bounds = { { pos.x - r, pos.y - r, }, { pos.x + r, pos.y + r } }
+      local ghosts = cell.owner.surface.find_entities_filtered{area=bounds, type="entity-ghost", force=network.force}
+      for _, ghost in pairs(ghosts) do
+        -- bounds can overlap, so we need to dedup here to avoid requesting too much
+        local is_dup = false
+        for _, f in pairs(found) do
+          if f == ghost then is_dup = true end
+        end
+        if not is_dup then
+          table.insert(found, ghost)
+        end
       end
     end
   end
