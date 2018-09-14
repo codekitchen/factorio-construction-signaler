@@ -1,6 +1,7 @@
+require "util" -- for table.compare function
 require "data"
 
--- Each signaller updates once every 60 ticks (once per second). This could be
+-- Each signaler updates once every 60 ticks (once per second). This could be
 -- turned into a setting, but I'm not sure it's necessary.
 local tick_rate = 60
 
@@ -8,10 +9,17 @@ script.on_init(function()
   global.signalers = {}
 end)
 
+script.on_configuration_changed(function()
+  -- data migrations
+  for _id, signaler in pairs(global.signalers) do
+    signaler.signals = {}
+  end
+end)
+
 function on_tick(event)
-  for _id, signaller in pairs(global.signalers) do
-    if event.tick % tick_rate == signaller.tick_offset then
-      update_signaller(signaller.entity)
+  for _id, signaler in pairs(global.signalers) do
+    if event.tick % tick_rate == signaler.tick_offset then
+      update_signaller(signaler)
     end
   end
 end
@@ -76,13 +84,18 @@ function build_signals(ghosts)
   return signals
 end
 
-function update_signaller(entity)
+function update_signaller(signaler)
+  local entity = signaler.entity
   local control = entity.get_or_create_control_behavior()
   if not control then return end
   local network = entity.surface.find_logistic_network_by_position(entity.position, entity.force)
   local ghosts = find_ghosts(network)
   local signals = build_signals(ghosts)
-  control.parameters = { parameters=signals }
+  if not table.compare(signals, signaler.signals) then
+    -- log("old signals: " .. serpent.block(signaler.signals) .. " new signals: " .. serpent.block(signals))
+    control.parameters = { parameters=signals }
+    signaler.signals = signals
+  end
 end
 
 function on_entity_added(event)
@@ -91,6 +104,7 @@ function on_entity_added(event)
     global.signalers[entity.unit_number] = {
       entity = entity,
       tick_offset = event.tick % tick_rate,
+      signals = {},
     }
   end
 end
