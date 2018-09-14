@@ -1,9 +1,9 @@
 require "util" -- for table.compare function
-require "data"
 
 -- Each signaler updates once every 60 ticks (once per second). This could be
 -- turned into a setting, but I'm not sure it's necessary.
 local tick_rate = 60
+local entity_name = "combinator-construction"
 
 script.on_init(function()
   global.signalers = {}
@@ -11,25 +11,19 @@ end)
 
 script.on_configuration_changed(function()
   -- data migrations
-  for _id, signaler in pairs(global.signalers) do
+  for _, signaler in pairs(global.signalers) do
     signaler.signals = {}
   end
 end)
 
-function on_tick(event)
-  for _id, signaler in pairs(global.signalers) do
-    if event.tick % tick_rate == signaler.tick_offset then
-      update_signaller(signaler)
-    end
-  end
-end
-
-function find_ghosts(network)
+local function find_ghosts(network)
   if not network then
     return {}
   end
 
-  found = {}
+  local found = {}
+  local dedup = {}
+
   for _,cell in pairs(network.cells) do
     local pos = cell.owner.position
     local r = cell.construction_radius
@@ -43,12 +37,9 @@ function find_ghosts(network)
       local ghosts = cell.owner.surface.find_entities_filtered{area=bounds, type="entity-ghost", force=network.force}
       for _, ghost in pairs(ghosts) do
         -- bounds can overlap, so we need to dedup here to avoid requesting too much
-        local is_dup = false
-        for _, f in pairs(found) do
-          if f == ghost then is_dup = true end
-        end
-        if not is_dup then
+        if not dedup[ghost.unit_number] then
           table.insert(found, ghost)
+          dedup[ghost.unit_number] = true
         end
       end
     end
@@ -57,18 +48,19 @@ function find_ghosts(network)
   return found
 end
 
-function item_from_ghost(ghost)
+local function item_from_ghost(ghost)
   -- There can technically be multiple items that when placed create this ghost,
   -- so we just go with the first. I'm curious where this might be the wrong
   -- thing to do, and how I could fix it.
-  items = ghost.ghost_prototype.items_to_place_this
+  local items = ghost.ghost_prototype.items_to_place_this
+  -- luacheck: ignore 512
   for name, _ in pairs(items) do
     return name
   end
 end
 
-function build_signals(ghosts)
-  signals = {}
+local function build_signals(ghosts)
+  local signals = {}
   for _, ghost in pairs(ghosts) do
     local existing = nil
     local name = item_from_ghost(ghost)
@@ -84,7 +76,7 @@ function build_signals(ghosts)
   return signals
 end
 
-function update_signaller(signaler)
+local function update_signaller(signaler)
   local entity = signaler.entity
   local control = entity.get_or_create_control_behavior()
   if not control then return end
@@ -98,7 +90,7 @@ function update_signaller(signaler)
   end
 end
 
-function on_entity_added(event)
+local function on_entity_added(event)
   local entity = event.created_entity
   if entity.name == entity_name then
     global.signalers[entity.unit_number] = {
@@ -109,10 +101,18 @@ function on_entity_added(event)
   end
 end
 
-function on_entity_removed(event)
+local function on_entity_removed(event)
   local entity = event.entity
   if entity.name == entity_name then
     global.signalers[entity.unit_number] = nil
+  end
+end
+
+local function on_tick(event)
+  for _, signaler in pairs(global.signalers) do
+    if event.tick % tick_rate == signaler.tick_offset then
+      update_signaller(signaler)
+    end
   end
 end
 
