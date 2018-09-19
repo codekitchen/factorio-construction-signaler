@@ -1,4 +1,10 @@
 ----------
+Version: XXX
+Date: XXX
+
+* Add support for tile ghosts, so we will signal on ghost tiles, landfill, etc.
+
+----------
 Version: 0.16.1
 Date: 2018-09-17
 

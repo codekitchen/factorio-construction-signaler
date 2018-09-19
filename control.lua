@@ -34,7 +34,7 @@ local function find_ghosts(network)
       -- here. I'd like to know how it happens, though, since I may need to do
       -- something different in those cases.
       local bounds = { { pos.x - r, pos.y - r, }, { pos.x + r, pos.y + r } }
-      local ghosts = cell.owner.surface.find_entities_filtered{area=bounds, type="entity-ghost", force=network.force}
+      local ghosts = cell.owner.surface.find_entities_filtered{area=bounds, type={"tile-ghost", "entity-ghost"}, force=network.force}
       for _, ghost in pairs(ghosts) do
         -- bounds can overlap, so we need to dedup here to avoid requesting too much
         if not dedup[ghost.unit_number] then
