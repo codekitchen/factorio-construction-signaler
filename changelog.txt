@@ -1,0 +1,14 @@
+----------
+Version: 0.16.1
+Date: 2018-09-17
+
+* Fix compatibility with the Robocharger mod (and any other mods that add zero-radius Roboports).
+* Performance improvements:
+  * Cache the list of signals for each signaler, and don't tell the Factorio engine to update the signals except when they've changed.
+  * Use a lookup table for the deduping logic, to speed things up where there are lots of ghosts.
+
+----------
+Version: 0.16.0
+Date: 2018-09-12
+
+* Initial release.
