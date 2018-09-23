@@ -48,6 +48,11 @@ local function find_ghosts(network)
   return found
 end
 
+
+-- generating signals from ghosts build_signals(ghosts)
+do
+local signals = {}
+
 local function item_from_ghost(ghost)
   -- There can technically be multiple items that when placed create this ghost,
   -- so we just go with the first. I'm curious where this might be the wrong
@@ -59,21 +64,30 @@ local function item_from_ghost(ghost)
   end
 end
 
-local function build_signals(ghosts)
-  local signals = {}
+local function add_signal(name, count)
+  local existing = nil
+  for _, s in pairs(signals) do
+    if s.signal.name == name then existing = s end
+  end
+  if not existing then
+    existing = { signal = { type = "item", name = name }, count = 0, index = (#signals+1) }
+    table.insert(signals, existing)
+  end
+  existing.count = existing.count + count
+end
+
+function build_signals(ghosts)
+  signals = {}
   for _, ghost in pairs(ghosts) do
-    local existing = nil
-    local name = item_from_ghost(ghost)
-    for _, s in pairs(signals) do
-      if s.signal.name == name then existing = s end
-    end
-    if not existing then
-      existing = { signal = { type = "item", name = name }, count = 0, index = (#signals+1) }
-      table.insert(signals, existing)
-    end
-    existing.count = existing.count + 1
+    add_signal(item_from_ghost(ghost), 1)
+    -- build signals for items requestd after ghost revival (modules)
+    for request_item, count in pairs(ghost.item_requests) do
+      add_signal(request_item, count)
+    end    
   end
   return signals
+end
+
 end
 
 local function update_signaller(signaler)
