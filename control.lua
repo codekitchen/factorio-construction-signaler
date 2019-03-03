@@ -53,17 +53,14 @@ local function item_from_ghost(ghost)
   -- so we just go with the first. I'm curious where this might be the wrong
   -- thing to do, and how I could fix it.
   local items = ghost.ghost_prototype.items_to_place_this
-  -- luacheck: ignore 512
-  for name, _ in pairs(items) do
-    return name
-  end
+  return items[1]["name"], items[1]["count"]
 end
 
 local function build_signals(ghosts)
   local signals = {}
   for _, ghost in pairs(ghosts) do
     local existing = nil
-    local name = item_from_ghost(ghost)
+    local name, count= item_from_ghost(ghost)
     for _, s in pairs(signals) do
       if s.signal.name == name then existing = s end
     end
@@ -71,7 +68,7 @@ local function build_signals(ghosts)
       existing = { signal = { type = "item", name = name }, count = 0, index = (#signals+1) }
       table.insert(signals, existing)
     end
-    existing.count = existing.count + 1
+    existing.count = existing.count + count
   end
   return signals
 end
